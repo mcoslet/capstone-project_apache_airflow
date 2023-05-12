@@ -9,6 +9,7 @@ from datetime import datetime
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.db import provide_session
 from airflow.models.dag import get_last_dagrun
+from astronomer.providers.core.sensors.filesystem import FileSensorAsync
 
 FILE_PATH = Variable.get("FILE_PATH", default_var='/tmp')
 
@@ -17,13 +18,12 @@ with DAG(
         start_date=datetime(2023, 5, 1),
         schedule_interval='@hourly'
 ) as dag:
-    waiting_for_file = FileSensor(task_id='waiting_for_file',
-                                  poke_interval=30,
-                                  timeout=60 * 2,
-                                  mode='poke',
-                                  soft_fail=True,
-                                  filepath=f'{FILE_PATH}/test.txt'
-                                  )
+    waiting_for_file = FileSensorAsync(task_id='waiting_for_file',
+                                       filepath=f'{FILE_PATH}/test.txt',
+                                       poke_interval=30,
+                                       timeout=60 * 2,
+                                       mode="poke"
+                                       )
 
     trigger_dag = [TriggerDagRunOperator(task_id=f'trigger_{dag_id}',
                                          trigger_dag_id=f'{dag_id}_grid')
@@ -46,8 +46,9 @@ with DAG(
             external_dag_id='dag_id_1_grid',
             external_task_id=None,
             execution_date_fn=_get_execution_date_of('dag_id_1_grid'),
-            timeout=600,
-            mode="poke"
+            timeout=60 * 2,
+            mode="poke",
+            check_existence=True
         )
 
 

@@ -5,26 +5,30 @@ from airflow.operators.python import BranchPythonOperator
 from datetime import datetime, timedelta
 
 default_args = {
-    'owner': 'Miko',
+    'owner': 'mcoslet',
     'depends_on_past': False,
     'start_date': datetime(2018, 6, 18),
-    'email': ['hello@moonshots.ai'],
     'email_on_failure': False,
     'email_on_retry': False,
-    'retries': 1,
+    'retries': 2,
     'retry_delay': timedelta(minutes=1)
 }
 
 with DAG(
         dag_id='Weekday',
         default_args=default_args,
-        schedule_interval="@once") as dag:
+        schedule_interval="@once", tags=['BranchPythonOperator'],
+        doc_md="Check what today weekday is and trigger today task") as dag:
     # used to factorize the code and avoid repetition
     tabDays = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 
-
     # returns the week day (monday, tuesday, etc.)
     def get_day(**kwargs):
+        """
+        Use datetime.now.weekday to get today weekday 
+        :param kwargs: airflow context to push today weekday
+        :return: Today weekday
+        """
         kwargs['ti'].xcom_push(key='day', value=datetime.now().weekday())
 
 
@@ -34,7 +38,6 @@ with DAG(
         python_callable=get_day,
         provide_context=True
     )
-
 
     # returns the name id of the task to launch (task_for_monday, task_for_tuesday, etc.)
     def branch(**kwargs):

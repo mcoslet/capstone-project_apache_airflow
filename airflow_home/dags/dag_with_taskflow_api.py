@@ -5,8 +5,8 @@ from datetime import datetime, timedelta
 from random import uniform
 
 default_args = {
-    'owner': 'Miko',
-    'retries': 3,
+    'owner': 'mcoslet',
+    'retries': 2,
     'retry_delay': timedelta(minutes=1)
 }
 
@@ -14,8 +14,12 @@ default_args = {
 @dag(dag_id="taskflow_api",
      default_args=default_args,
      start_date=datetime(2018, 6, 18),
-     schedule_interval="@daily")
+     schedule_interval="@daily",
+     tags=['taskflow'])
 def dag_taskflow_api():
+    """
+    This dag is a example of taskflow api in airflow, it's train 3 models and choose best accuracy
+    """
     @task(task_id='trainig_model')
     def _training_model():
         accuracy: float = uniform(0.1, 10)

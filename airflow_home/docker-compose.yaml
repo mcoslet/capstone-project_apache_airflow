@@ -45,6 +45,9 @@
 # Feel free to modify this file to suit your needs.
 ---
 version: '3.8'
+networks: 
+  airflow:
+    external: true
 x-airflow-common:
   &airflow-common
   # In order to add custom dependencies or upgrade provider packages you can use your extended image.
@@ -76,6 +79,7 @@ x-airflow-common:
     - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
+    - ${AIRFLOW_PROJ_DIR:-.}/resources:/opt/airflow/resources
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on
@@ -146,7 +150,7 @@ services:
 
   airflow-worker:
     <<: *airflow-common
-    command: celery worker
+    command: celery worker -q jobs_queue,default
     healthcheck:
       test:
         - "CMD-SHELL"
@@ -293,6 +297,21 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
+     
+  vault:
+    image: vault:latest
+    environment:
+      - VAULT_ADDR=http://127.0.0.1:8200
+      - VAULT_API_ADDR=http://127.0.0.1:8200
+      - VAULT_ADDRESS=http://127.0.0.1:8200
+      - VAULT_DEV_ROOT_TOKEN_ID=ZyrP7NtNw0hbLUqu7N3IlTdO
+    expose:
+      - 8200
+    ports:
+      - 8200:8200
+    command: server -dev
+    networks:
+      - airflow
 
 volumes:
   postgres-db-volume:
